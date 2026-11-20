@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JHood Labs | Web3 & Crypto Consulting</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Space Grotesk for headings, Inter for body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Tailwind Config for Brand Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#030303',
+                            800: '#0a0a0a',
+                            700: '#121212',
+                        },
+                        neon: {
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6',
+                            cyan: '#06b6d4'
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #030303;
+            color: #d1d5db;
+        }
+        
+        /* High-tech grid background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.3); /* Neon purple border on hover */
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+        }
+        
+        /* Text Gradients */
+        .text-gradient {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glow-button::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4);
+            z-index: -1;
+            filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: inherit;
+        }
+        
+        .glow-button:hover::before {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-neon-purple selection:text-white relative overflow-x-hidden">
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-neon-purple/20 rounded-full blur-[150px] pointer-events-none z-[-1]"></div>
+    <div class="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-neon-blue/20 rounded-full blur-[150px] pointer-events-none z-[-1]"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass transition-all duration-300" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="#" class="flex items-center gap-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple p-[1px] shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] transition-all">
+                            <div class="w-full h-full bg-dark-900 rounded-xl flex items-center justify-center">
+                                <span class="text-white font-display font-bold text-lg leading-none">JH</span>
+                            </div>
+                        </div>
+                        <span class="font-display font-bold text-2xl tracking-tight text-white">JHood Labs</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-8 items-center">
+                    <a href="#" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">Home</a>
+                    <a href="#services" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">Services</a>
+                    <a href="#about" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">About Us</a>
+                    <a href="#contact" class="relative glow-button bg-dark-800 border border-white/10 text-white px-6 py-2.5 rounded-lg text-sm uppercase tracking-widest font-semibold hover:border-neon-purple/50 transition-all">
+                        Contact
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-gray-400 hover:text-white focus:outline-none p-2">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path id="menu-icon-path" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-dark-900/95 backdrop-blur-xl border-b border-white/10 absolute w-full">
+        <div class="px-4 pt-2 pb-6 space-y-2">
+            <a href="#" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">Home</a>
+            <a href="#services" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">Services</a>
+            <a href="#about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">About Us</a>
+            <a href="#contact" class="block px-3 py-3 mt-4 text-center rounded-md text-base font-medium bg-gradient-to-r from-neon-blue to-neon-purple text-white">Contact</a>
+        </div>
+    </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-[85vh] flex flex-col justify-center pt-32 pb-20 overflow-hidden">
+        <div class="absolute inset-0 bg-grid z-[-1]"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 w-full">
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white tracking-tight mb-6 leading-[1.1]">
+                Engineer Your <br>
+                <span class="text-gradient">Web3 Future</span>
+            </h1>
+            
+            <p class="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-gray-400 mb-12 leading-relaxed">
+                Elite technology consulting for the decentralised era. We design robust tokenomics, algorithmic market strategies, and tailored blockchain solutions for visionaries.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-6">
+                <a href="#services" class="relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-all">
+                    Explore Solutions
+                </a>
+                <a href="#contact" class="px-8 py-4 text-sm font-bold uppercase tracking-widest rounded-lg text-white bg-transparent border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all">
+                    Initiate Protocol
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-24 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-left md:text-center max-w-3xl mx-auto mb-16">
+                <h2 class="text-neon-purple text-sm font-bold uppercase tracking-widest mb-3">Core Competencies</h2>
+                <h3 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Architecting Decentralisation</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                <!-- Service 1: Tokenomics -->
+                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-purple/50 group-hover:bg-neon-purple/10 transition-all duration-300">
+                        <svg class="w-7 h-7 text-neon-blue group-hover:text-neon-purple transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-display font-bold text-white mb-4">Tokenomics Architecture</h4>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        Designing sustainable, mathematically rigorous economic models for tokens. We simulate supply/demand dynamics, staking mechanisms, and emission schedules to ensure long-term protocol viability.
+                    </p>
+                </div>
+
+                <!-- Service 2: Market Strategies -->
+                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-blue/50 group-hover:bg-neon-blue/10 transition-all duration-300">
+                        <svg class="w-7 h-7 text-neon-purple group-hover:text-neon-cyan transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-display font-bold text-white mb-4">Market Strategies</h4>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        Data-driven liquidity provision, market making, and yield optimisation strategies. We leverage quantitative analysis to maximise capital efficiency across DeFi ecosystems.
+                    </p>
+                </div>
+
+                <!-- Service 3: Tailored Tech -->
+                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-cyan/50 group-hover:bg-neon-cyan/10 transition-all duration-300">
+                        <svg class="w-7 h-7 text-neon-cyan group-hover:text-neon-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-display font-bold text-white mb-4">Tailored Tech Solutions</h4>
+                    <p class="text-gray-400 leading-relaxed text-sm">
+                        From custom smart contract development and auditing to full-stack decentralised application (dApp) architecture. We build secure, scalable, and performant Web3 infrastructure.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section id="about" class="py-24 relative bg-dark-800/30 border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center gap-12">
+                <div class="w-full md:w-1/2">
+                    <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">About Us</h2>
+                    <h3 class="text-3xl md:text-4xl font-display font-bold text-white mb-6">Expertise at the Edge of Web3</h3>
+                    <p class="text-gray-400 leading-relaxed mb-6">
+                        JHood Labs was founded on the principle that robust decentralised systems require rigorous, multi-disciplinary engineering. We combine deep technical knowledge with algorithmic financial strategies to build infrastructure that scales.
+                    </p>
+                    <p class="text-gray-400 leading-relaxed">
+                        With a focus on transparent tokenomics and secure smart contract architecture, we partner closely with protocols to ensure their underlying mechanics are as resilient as their vision.
+                    </p>
+                </div>
+                <div class="w-full md:w-1/2 relative">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-neon-blue/20 to-neon-purple/20 blur-2xl rounded-full"></div>
+                    <div class="relative glass-card rounded-2xl p-8 border border-white/10">
+                        <div class="grid grid-cols-2 gap-6 text-center">
+                            <div>
+                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Data-Driven</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-widest">Approaches</div>
+                            </div>
+                            <div>
+                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Bespoke</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-widest">Architecture</div>
+                            </div>
+                            <div>
+                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Scalable</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-widest">Solutions</div>
+                            </div>
+                            <div>
+                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Resilient</div>
+                                <div class="text-xs text-gray-500 uppercase tracking-widest">Tokenomics</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact / CTA Section -->
+    <section id="contact" class="py-32 relative overflow-hidden">
+        <!-- Glow effects -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 blur-[100px] rounded-full pointer-events-none"></div>
+        
+        <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
+            <div class="glass-card p-8 md:p-12 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                
+                <!-- Text Content -->
+                <div class="text-left">
+                    <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">Initiate Protocol</h2>
+                    <h3 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Deploy Your Vision</h3>
+                    <p class="text-gray-400 mb-8 leading-relaxed">
+                        Partner with JHood Labs to build resilient, scalable, and economically sound Web3 applications. Let's engineer the decentralised future together.
+                    </p>
+                </div>
+                
+                <!-- Contact Form -->
+                <div class="bg-dark-900/40 p-6 md:p-8 rounded-2xl border border-white/5 shadow-inner">
+                    
+                    <!-- Formspree Global State Messages -->
+                    <div data-fs-success class="text-neon-cyan text-sm font-medium mb-5 bg-neon-cyan/10 border border-neon-cyan/20 p-4 rounded-lg empty:hidden"></div>
+                    <div data-fs-error class="text-red-400 text-sm font-medium mb-5 bg-red-400/10 border border-red-400/20 p-4 rounded-lg empty:hidden"></div>
+                    
+                    <form id="my-form" action="https://formspree.io/f/mbgoajoz" method="POST" class="space-y-5">
+                        <div>
+                            <label for="name" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Name</label>
+                            <input type="text" id="name" name="name" required data-fs-field
+                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all placeholder-gray-600" 
+                                placeholder="Satoshi Nakamoto">
+                            <span data-fs-error="name" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                        </div>
+                        
+                        <div>
+                            <label for="email" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
+                            <input type="email" id="email" name="email" required data-fs-field
+                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all placeholder-gray-600" 
+                                placeholder="visionary@web3.com">
+                            <span data-fs-error="email" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                        </div>
+                        
+                        <div>
+                            <label for="message" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Message</label>
+                            <textarea id="message" name="message" rows="4" required data-fs-field
+                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all placeholder-gray-600 resize-none" 
+                                placeholder="Outline your parameters..."></textarea>
+                            <span data-fs-error="message" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                        </div>
+                        
+                        <button type="submit" data-fs-submit-btn class="w-full relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-200 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark-900 pt-20 pb-10 border-t border-white/10 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                <!-- Brand Col -->
+                <div class="lg:col-span-2">
+                    <a href="#" class="flex items-center gap-3 mb-6">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple p-[1px]">
+                            <div class="w-full h-full bg-dark-900 rounded-lg flex items-center justify-center">
+                                <span class="text-white font-display font-bold text-sm leading-none">JH</span>
+                            </div>
+                        </div>
+                        <span class="font-display font-bold text-xl tracking-tight text-white">JHood Labs</span>
+                    </a>
+                    <p class="text-gray-500 text-sm max-w-md leading-relaxed mb-6">
+                        Advanced technology consulting and engineering for the crypto ecosystem. We provide the strategic foundation for the next generation of digital assets.
+                    </p>
+                </div>
+
+                <!-- Navigation -->
+                <div>
+                    <h4 class="text-white font-display font-bold uppercase tracking-widest text-xs mb-6">Index</h4>
+                    <ul class="space-y-4 text-sm text-gray-500">
+                        <li><a href="#" class="hover:text-neon-cyan transition-colors">Home</a></li>
+                        <li><a href="#services" class="hover:text-neon-cyan transition-colors">Services</a></li>
+                        <li><a href="#about" class="hover:text-neon-cyan transition-colors">About Us</a></li>
+                        <li><a href="#contact" class="hover:text-neon-cyan transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <!-- Connect -->
+                <div>
+                    <h4 class="text-white font-display font-bold uppercase tracking-widest text-xs mb-6">Network</h4>
+                    <ul class="space-y-4 text-sm text-gray-500">
+                        <li><a href="https://github.com/JamieHood" target="_blank" rel="noopener noreferrer" class="hover:text-neon-purple transition-colors flex items-center gap-2">GitHub</a></li>
+                        <li><a href="https://www.linkedin.com/in/jamie-hood-603919225/" target="_blank" rel="noopener noreferrer" class="hover:text-neon-purple transition-colors flex items-center gap-2">LinkedIn</a></li>
+                        <li><a href="mailto:jhoodlabs@gmail.com" class="hover:text-neon-purple transition-colors flex items-center gap-2 mt-4 text-white">jhoodlabs@gmail.com</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-gray-600 text-xs">
+                    &copy; <span id="year"></span> JHood Labs. Decentralised Network.
+                </p>
+                <div class="flex space-x-6 text-xs text-gray-600">
+                    <a href="#" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive Scripts -->
+    <script>
+        // Set current year
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Mobile Menu Toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const iconPath = document.getElementById('menu-icon-path');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            if(menu.classList.contains('hidden')) {
+                iconPath.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            } else {
+                iconPath.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            }
+        });
+
+        // Close mobile menu on click
+        menu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                menu.classList.add('hidden');
+                iconPath.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            });
+        });
+
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 20) {
+                navbar.classList.add('border-b', 'border-white/10', 'bg-dark-900/80');
+                navbar.classList.remove('bg-transparent');
+            } else {
+                navbar.classList.remove('border-b', 'border-white/10', 'bg-dark-900/80');
+                navbar.classList.add('bg-transparent');
+            }
+        });
+    </script>
+
+    <!-- Formspree AJAX SDK Integration -->
+    <script>
+        window.formspree = window.formspree || function () { (formspree.q = formspree.q || []).push(arguments); };
+        formspree('initForm', { formElement: '#my-form', formId: 'mbgoajoz' });
+    </script>
+    <script src="https://unpkg.com/@formspree/ajax@1" defer></script>
+</body>
+</html>
