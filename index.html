@@ -39,6 +39,59 @@
             }
         }
     </script>
+    <!-- Portrait Auto-Crop & Fallback Helpers (loaded prior to body images) -->
+    <script>
+        function applyPortraitCrop(img) {
+            if (img.dataset.isPlaceholder === 'true') return;
+            const nw = img.naturalWidth;
+            const nh = img.naturalHeight;
+            if (!nw || !nh) return;
+            // If the uploaded image is already a pre-cropped 1:1 square JPG, fill frame cleanly
+            if (Math.abs(nw - nh) <= 4) {
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.left = '0';
+                img.style.top = '0';
+                img.classList.add('object-cover');
+                return;
+            }
+            const cx = parseFloat(img.dataset.cropX);
+            const cy = parseFloat(img.dataset.cropY);
+            const cw = parseFloat(img.dataset.cropW);
+            if (!cx || !cy || !cw) return;
+
+            const ratio = nh / nw;
+            const wScale = 1 / cw;
+            const hScale = ratio / cw;
+
+            // Clamp offsets so the cropped frame never reveals blank edges
+            const leftOffset = Math.min(0, Math.max(1 - wScale, 0.5 - cx / cw));
+            const topOffset = Math.min(0, Math.max(1 - hScale, 0.5 - (cy * ratio) / cw));
+
+            img.classList.remove('object-cover');
+            img.style.width = `${wScale * 100}%`;
+            img.style.height = 'auto';
+            img.style.left = `${leftOffset * 100}%`;
+            img.style.top = `${topOffset * 100}%`;
+        }
+
+        function handlePortraitError(img, placeholderUrl) {
+            const fallbacks = (img.dataset.fallbacks || '').split(',').filter(Boolean);
+            const idx = parseInt(img.dataset.fallbackIdx || '0', 10);
+            if (idx < fallbacks.length) {
+                img.dataset.fallbackIdx = String(idx + 1);
+                img.src = fallbacks[idx];
+            } else if (img.dataset.isPlaceholder !== 'true') {
+                img.dataset.isPlaceholder = 'true';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.left = '0';
+                img.style.top = '0';
+                img.classList.add('object-cover');
+                img.src = placeholderUrl;
+            }
+        }
+    </script>
     <style>
         body {
             background-color: #030303;
@@ -98,9 +151,40 @@
         .glow-button:hover::before {
             opacity: 0.8;
         }
+
+        /* Active navigation indicator & page fade transition */
+        .nav-active {
+            color: #ffffff !important;
+            position: relative;
+        }
+        .nav-active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            border-radius: 9999px;
+        }
+
+        .page-section {
+            animation: pageFadeIn 0.35s ease-out forwards;
+        }
+
+        @keyframes pageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
-<body class="font-sans antialiased selection:bg-neon-purple selection:text-white relative overflow-x-hidden">
+<body class="font-sans antialiased selection:bg-neon-purple selection:text-white relative overflow-x-hidden flex flex-col min-h-screen">
 
     <!-- Ambient Background Glows -->
     <div class="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-neon-purple/20 rounded-full blur-[150px] pointer-events-none z-[-1]"></div>
@@ -112,7 +196,7 @@
             <div class="flex justify-between items-center h-20">
                 <!-- Logo -->
                 <div class="flex-shrink-0 flex items-center">
-                    <a href="#" class="flex items-center gap-3 group">
+                    <a href="index.html" data-page="home" class="flex items-center gap-3 group">
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple p-[1px] shadow-[0_0_15px_rgba(139,92,246,0.3)] group-hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] transition-all">
                             <div class="w-full h-full bg-dark-900 rounded-xl flex items-center justify-center">
                                 <span class="text-white font-display font-bold text-lg leading-none">JH</span>
@@ -124,17 +208,16 @@
                 
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex space-x-8 items-center">
-                    <a href="#" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">Home</a>
-                    <a href="#services" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">Services</a>
-                    <a href="#about" class="text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">About Us</a>
-                    <a href="#contact" class="relative glow-button bg-dark-800 border border-white/10 text-white px-6 py-2.5 rounded-lg text-sm uppercase tracking-widest font-semibold hover:border-neon-purple/50 transition-all">
+                    <a href="index.html" data-page="home" class="nav-link text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">Home</a>
+                    <a href="about.html" data-page="about" class="nav-link text-gray-400 hover:text-white text-sm uppercase tracking-widest font-medium transition-colors">About Us</a>
+                    <a href="contact.html" data-page="contact" class="nav-link relative glow-button bg-dark-800 border border-white/10 text-white px-6 py-2.5 rounded-lg text-sm uppercase tracking-widest font-semibold hover:border-neon-purple/50 transition-all">
                         Contact
                     </a>
                 </div>
 
                 <!-- Mobile Menu Button -->
                 <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="text-gray-400 hover:text-white focus:outline-none p-2">
+                    <button id="mobile-menu-btn" aria-label="Toggle Menu" class="text-gray-400 hover:text-white focus:outline-none p-2">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path id="menu-icon-path" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                         </svg>
@@ -144,191 +227,407 @@
         </div>
 
         <!-- Mobile Menu -->
-    <div id="mobile-menu" class="hidden md:hidden bg-dark-900/95 backdrop-blur-xl border-b border-white/10 absolute w-full">
-        <div class="px-4 pt-2 pb-6 space-y-2">
-            <a href="#" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">Home</a>
-            <a href="#services" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">Services</a>
-            <a href="#about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">About Us</a>
-            <a href="#contact" class="block px-3 py-3 mt-4 text-center rounded-md text-base font-medium bg-gradient-to-r from-neon-blue to-neon-purple text-white">Contact</a>
+        <div id="mobile-menu" class="hidden md:hidden bg-dark-900/95 backdrop-blur-xl border-b border-white/10 absolute w-full">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="index.html" data-page="home" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">Home</a>
+                <a href="about.html" data-page="about" class="block px-3 py-3 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 uppercase tracking-wider">About Us</a>
+                <a href="contact.html" data-page="contact" class="block px-3 py-3 mt-4 text-center rounded-md text-base font-medium bg-gradient-to-r from-neon-blue to-neon-purple text-white uppercase tracking-wider">Contact</a>
+            </div>
         </div>
-    </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="relative min-h-[85vh] flex flex-col justify-center pt-32 pb-20 overflow-hidden">
-        <div class="absolute inset-0 bg-grid z-[-1]"></div>
-        
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 w-full">
-            <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white tracking-tight mb-6 leading-[1.1]">
-                Engineer Your <br>
-                <span class="text-gradient">Web3 Future</span>
-            </h1>
-            
-            <p class="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-gray-400 mb-12 leading-relaxed">
-                Elite technology consulting for the decentralised era. We design robust tokenomics, algorithmic market strategies, and tailored blockchain solutions for visionaries.
-            </p>
-            
-            <div class="flex flex-col sm:flex-row justify-center gap-6">
-                <a href="#services" class="relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-all">
-                    Explore Solutions
-                </a>
-                <a href="#contact" class="px-8 py-4 text-sm font-bold uppercase tracking-widest rounded-lg text-white bg-transparent border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all">
-                    Initiate Protocol
-                </a>
-            </div>
-        </div>
-    </section>
+    <!-- Main Multi-Page Container -->
+    <main class="flex-grow">
 
-    <!-- Services Section -->
-    <section id="services" class="py-24 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-left md:text-center max-w-3xl mx-auto mb-16">
-                <h2 class="text-neon-purple text-sm font-bold uppercase tracking-widest mb-3">Core Competencies</h2>
-                <h3 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Architecting Decentralisation</h3>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-                <!-- Service 1: Tokenomics -->
-                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
-                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-purple/50 group-hover:bg-neon-purple/10 transition-all duration-300">
-                        <svg class="w-7 h-7 text-neon-blue group-hover:text-neon-purple transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-display font-bold text-white mb-4">Tokenomics Architecture</h4>
-                    <p class="text-gray-400 leading-relaxed text-sm">
-                        Designing sustainable, mathematically rigorous economic models for tokens. We simulate supply/demand dynamics, staking mechanisms, and emission schedules to ensure long-term protocol viability.
-                    </p>
-                </div>
-
-                <!-- Service 2: Market Strategies -->
-                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
-                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-blue/50 group-hover:bg-neon-blue/10 transition-all duration-300">
-                        <svg class="w-7 h-7 text-neon-purple group-hover:text-neon-cyan transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-display font-bold text-white mb-4">Market Strategies</h4>
-                    <p class="text-gray-400 leading-relaxed text-sm">
-                        Data-driven liquidity provision, market making, and yield optimisation strategies. We leverage quantitative analysis to maximise capital efficiency across DeFi ecosystems.
-                    </p>
-                </div>
-
-                <!-- Service 3: Tailored Tech -->
-                <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
-                    <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-cyan/50 group-hover:bg-neon-cyan/10 transition-all duration-300">
-                        <svg class="w-7 h-7 text-neon-cyan group-hover:text-neon-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-display font-bold text-white mb-4">Tailored Tech Solutions</h4>
-                    <p class="text-gray-400 leading-relaxed text-sm">
-                        From custom smart contract development and auditing to full-stack decentralised application (dApp) architecture. We build secure, scalable, and performant Web3 infrastructure.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- About Us Section -->
-    <section id="about" class="py-24 relative bg-dark-800/30 border-y border-white/5">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row items-center gap-12">
-                <div class="w-full md:w-1/2">
-                    <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">About Us</h2>
-                    <h3 class="text-3xl md:text-4xl font-display font-bold text-white mb-6">Expertise at the Edge of Web3</h3>
-                    <p class="text-gray-400 leading-relaxed mb-6">
-                        JHood Labs was founded on the principle that robust decentralised systems require rigorous, multi-disciplinary engineering. We combine deep technical knowledge with algorithmic financial strategies to build infrastructure that scales.
-                    </p>
-                    <p class="text-gray-400 leading-relaxed">
-                        With a focus on transparent tokenomics and secure smart contract architecture, we partner closely with protocols to ensure their underlying mechanics are as resilient as their vision.
-                    </p>
-                </div>
-                <div class="w-full md:w-1/2 relative">
-                    <div class="absolute inset-0 bg-gradient-to-tr from-neon-blue/20 to-neon-purple/20 blur-2xl rounded-full"></div>
-                    <div class="relative glass-card rounded-2xl p-8 border border-white/10">
-                        <div class="grid grid-cols-2 gap-6 text-center">
-                            <div>
-                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Data-Driven</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-widest">Approaches</div>
-                            </div>
-                            <div>
-                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Bespoke</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-widest">Architecture</div>
-                            </div>
-                            <div>
-                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Scalable</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-widest">Solutions</div>
-                            </div>
-                            <div>
-                                <div class="text-3xl font-display font-bold text-white mb-2 text-gradient">Resilient</div>
-                                <div class="text-xs text-gray-500 uppercase tracking-widest">Tokenomics</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact / CTA Section -->
-    <section id="contact" class="py-32 relative overflow-hidden">
-        <!-- Glow effects -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 blur-[100px] rounded-full pointer-events-none"></div>
-        
-        <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 z-10">
-            <div class="glass-card p-8 md:p-12 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <!-- ========================================== -->
+        <!-- PAGE 1: HOME (index.html)                  -->
+        <!-- ========================================== -->
+        <div id="page-home" class="page-section">
+            <!-- Hero Section -->
+            <section class="relative min-h-[85vh] flex flex-col justify-center pt-32 pb-20 overflow-hidden">
+                <div class="absolute inset-0 bg-grid z-[-1]"></div>
                 
-                <!-- Text Content -->
-                <div class="text-left">
-                    <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">Initiate Protocol</h2>
-                    <h3 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Deploy Your Vision</h3>
-                    <p class="text-gray-400 mb-8 leading-relaxed">
-                        Partner with JHood Labs to build resilient, scalable, and economically sound Web3 applications. Let's engineer the decentralised future together.
+                <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10 w-full">
+                    <h1 class="text-5xl md:text-7xl lg:text-8xl font-display font-bold text-white tracking-tight mb-6 leading-[1.1]">
+                        Engineer Your <br>
+                        <span class="text-gradient">Web3 Future</span>
+                    </h1>
+                    
+                    <p class="mt-6 max-w-2xl mx-auto text-lg md:text-xl text-gray-400 mb-12 leading-relaxed">
+                        Practical crypto consulting and direct engineering. From tokenomics and market making to EVM smart contracts and validator setup, we help you launch, trade, and manage digital assets with confidence.
                     </p>
-                </div>
-                
-                <!-- Contact Form -->
-                <div class="bg-dark-900/40 p-6 md:p-8 rounded-2xl border border-white/5 shadow-inner">
                     
-                    <!-- Formspree Global State Messages -->
-                    <div data-fs-success class="text-neon-cyan text-sm font-medium mb-5 bg-neon-cyan/10 border border-neon-cyan/20 p-4 rounded-lg empty:hidden"></div>
-                    <div data-fs-error class="text-red-400 text-sm font-medium mb-5 bg-red-400/10 border border-red-400/20 p-4 rounded-lg empty:hidden"></div>
-                    
-                    <form id="my-form" action="https://formspree.io/f/mbgoajoz" method="POST" class="space-y-5">
-                        <div>
-                            <label for="name" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Name</label>
-                            <input type="text" id="name" name="name" required data-fs-field
-                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all placeholder-gray-600" 
-                                placeholder="Satoshi Nakamoto">
-                            <span data-fs-error="name" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
-                        </div>
-                        
-                        <div>
-                            <label for="email" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
-                            <input type="email" id="email" name="email" required data-fs-field
-                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all placeholder-gray-600" 
-                                placeholder="visionary@web3.com">
-                            <span data-fs-error="email" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
-                        </div>
-                        
-                        <div>
-                            <label for="message" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Message</label>
-                            <textarea id="message" name="message" rows="4" required data-fs-field
-                                class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all placeholder-gray-600 resize-none" 
-                                placeholder="Outline your parameters..."></textarea>
-                            <span data-fs-error="message" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
-                        </div>
-                        
-                        <button type="submit" data-fs-submit-btn class="w-full relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-200 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
-                            Send Message
-                        </button>
-                    </form>
+                    <div class="flex flex-col sm:flex-row justify-center gap-6">
+                        <a href="#competencies" data-page="home" data-scroll="competencies" class="relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-all">
+                            What We Do
+                        </a>
+                        <a href="contact.html" data-page="contact" class="px-8 py-4 text-sm font-bold uppercase tracking-widest rounded-lg text-white bg-transparent border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all">
+                            Get in Touch
+                        </a>
+                    </div>
                 </div>
+            </section>
 
-            </div>
+            <!-- Core Competencies Section -->
+            <section id="competencies" class="py-24 relative border-t border-white/5">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-left md:text-center max-w-3xl mx-auto mb-16">
+                        <h2 class="text-neon-purple text-sm font-bold uppercase tracking-widest mb-3">Core Competencies</h2>
+                        <h3 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Proven Crypto Infrastructure &amp; Strategy</h3>
+                        <p class="text-gray-400 text-base md:text-lg leading-relaxed">
+                            Straightforward, proven solutions built around real experience in blockchain engineering, liquidity management, and onchain execution.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+                        <!-- 1: Tokenomics -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-purple/50 group-hover:bg-neon-purple/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-blue group-hover:text-neon-purple transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">Tokenomics</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Clear, sustainable token structures designed for the long run. We map out supply schedules, holder incentives, and unlock timelines so your token economy stays balanced and attractive to buyers.
+                            </p>
+                        </div>
+
+                        <!-- 2: Trading Strategies -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-blue/50 group-hover:bg-neon-blue/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-purple group-hover:text-neon-cyan transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">Trading Strategies</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Automated trading systems tailored to your goals. We build reliable strategies that work around the clock to capture market opportunities and manage risk without emotional guesswork.
+                            </p>
+                        </div>
+
+                        <!-- 3: EVM Specialisation -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-cyan/50 group-hover:bg-neon-cyan/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-cyan group-hover:text-neon-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">EVM Specialisation</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Deep technical expertise across Ethereum and EVM chains. From writing and deploying smart contracts to handling MEV protection and fast onchain execution, we make sure your code works safely.
+                            </p>
+                        </div>
+
+                        <!-- 4: Validator Infrastructure -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-purple/50 group-hover:bg-neon-purple/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-blue group-hover:text-neon-purple transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">Validator Infrastructure</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Complete setup and maintenance for blockchain validator nodes. We configure dependable, secure servers and active monitoring so your nodes stay online and earn staking rewards consistently.
+                            </p>
+                        </div>
+
+                        <!-- 5: Market Making Solutions -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-blue/50 group-hover:bg-neon-blue/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-purple group-hover:text-neon-cyan transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">Market Making Solutions</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Every healthy token needs smooth, active trading. We provide dedicated liquidity solutions that keep buy and sell prices steady, making it easy for everyday users to trade your token.
+                            </p>
+                        </div>
+
+                        <!-- 6: Unwinding Protocol -->
+                        <div class="glass-card rounded-2xl p-8 transition-transform duration-300 hover:-translate-y-2 group">
+                            <div class="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:border-neon-cyan/50 group-hover:bg-neon-cyan/10 transition-all duration-300">
+                                <svg class="w-7 h-7 text-neon-cyan group-hover:text-neon-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-xl font-display font-bold text-white mb-4">Position Unwinding</h4>
+                            <p class="text-gray-400 leading-relaxed text-sm">
+                                Need to manage or exit a large token holding? Our unwinding protocols carefully break down and close large inventories over time, protecting your return without pushing the market price down.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Bridge CTA to Dedicated Pages -->
+                    <div class="mt-16 glass-card rounded-2xl p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10">
+                        <div>
+                            <h4 class="text-xl md:text-2xl font-display font-bold text-white mb-2">Have a project or position to discuss?</h4>
+                            <p class="text-gray-400 text-sm">Find out more about how we work or send over a quick message to get started.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-4 shrink-0">
+                            <a href="about.html" data-page="about" class="px-6 py-3 text-xs font-bold uppercase tracking-widest rounded-lg text-white border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all">
+                                About Us
+                            </a>
+                            <a href="contact.html" data-page="contact" class="relative glow-button bg-white text-dark-900 px-6 py-3 rounded-lg font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-all">
+                                Contact Us
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-    </section>
+
+        <!-- ========================================== -->
+        <!-- PAGE 2: ABOUT US (about.html)              -->
+        <!-- ========================================== -->
+        <div id="page-about" class="page-section hidden">
+            <section class="relative pt-36 pb-24 overflow-hidden">
+                <div class="absolute inset-0 bg-grid z-[-1]"></div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    
+                    <!-- Page Header -->
+                    <div class="max-w-3xl mb-16">
+                        <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">About JHood Labs</h2>
+                        <h1 class="text-4xl md:text-6xl font-display font-bold text-white tracking-tight mb-6 leading-[1.15]">
+                            Bespoke Solutions. <span class="text-gradient">Zero Agency Bloat.</span>
+                        </h1>
+                        <p class="text-lg text-gray-400 leading-relaxed">
+                            Founded in 2025 with one clear vision: to provide bespoke, tailored solutions to everyday crypto problems faced by companies, whilst remaining highly mobile and competitively priced.
+                        </p>
+                    </div>
+
+                    <!-- Main Narrative & Pillars Grid -->
+                    <div class="flex flex-col lg:flex-row items-start gap-12 mb-20">
+                        <div class="w-full lg:w-1/2 space-y-6 text-gray-400 leading-relaxed">
+                            <p>
+                                Backed by multiple years of practical experience across the crypto space, market making, and institutional finance, JHood Labs delivers the breadth and capability of a full specialist team, concentrated entirely into one dedicated practitioner.
+                            </p>
+                            <p>
+                                Operating intentionally as a lean, one person business removes all the traditional agency bloat, middle management, and inflated retainers. That streamlined setup means high mobility, rapid turnarounds, and far more competitive pricing without cutting corners on technical rigour.
+                            </p>
+                            <p>
+                                Just as importantly, nothing ever gets lost in translation. You give instructions directly to the person architecting, building, and executing the work, ensuring complete alignment from day one.
+                            </p>
+                        </div>
+
+                        <div class="w-full lg:w-1/2 relative">
+                            <div class="absolute inset-0 bg-gradient-to-tr from-neon-blue/20 to-neon-purple/20 blur-2xl rounded-full"></div>
+                            <div class="relative glass-card rounded-2xl p-8 md:p-10 border border-white/10">
+                                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">The One Person Advantage</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                    <div class="p-4 rounded-xl bg-dark-900/50 border border-white/5">
+                                        <div class="text-2xl font-display font-bold mb-2 text-gradient">Direct Line</div>
+                                        <p class="text-xs text-gray-400 leading-relaxed">Zero middlemen. Your instructions go straight to the person executing the work.</p>
+                                    </div>
+                                    <div class="p-4 rounded-xl bg-dark-900/50 border border-white/5">
+                                        <div class="text-2xl font-display font-bold mb-2 text-gradient">Fair Pricing</div>
+                                        <p class="text-xs text-gray-400 leading-relaxed">Competitive rates without paying for agency overheads or idle account teams.</p>
+                                    </div>
+                                    <div class="p-4 rounded-xl bg-dark-900/50 border border-white/5">
+                                        <div class="text-2xl font-display font-bold mb-2 text-gradient">High Mobility</div>
+                                        <p class="text-xs text-gray-400 leading-relaxed">Fast turnarounds and the flexibility to pivot quickly as markets move.</p>
+                                    </div>
+                                    <div class="p-4 rounded-xl bg-dark-900/50 border border-white/5">
+                                        <div class="text-2xl font-display font-bold mb-2 text-gradient">Tailored Fit</div>
+                                        <p class="text-xs text-gray-400 leading-relaxed">Practical, bespoke solutions built around your actual everyday needs.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Board of Directors Section -->
+                    <div class="border-t border-white/10 pt-16">
+                        <div class="mb-12">
+                            <h2 class="text-neon-purple text-xs font-bold uppercase tracking-widest mb-2">Leadership</h2>
+                            <h3 class="text-2xl md:text-4xl font-display font-bold text-white">Board of Directors</h3>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                            <!-- Director 1: Managing Director (3.jpg - Palace Gardens, White Linen Shirt) -->
+                            <div class="glass-card rounded-2xl overflow-hidden group transition-transform duration-300 hover:-translate-y-2">
+                                <div class="aspect-square w-full overflow-hidden bg-dark-800 border-b border-white/5 relative">
+                                    <div class="w-full h-full relative group-hover:scale-105 transition-transform duration-500">
+                                        <img src="3.jpg"
+                                             data-fallbacks="3.JPG,3.jpeg"
+                                             data-crop-x="0.685"
+                                             data-crop-y="0.49"
+                                             data-crop-w="0.50"
+                                             onload="applyPortraitCrop(this)"
+                                             onerror="handlePortraitError(this, 'https://placehold.co/400x400/0a0a0a/8b5cf6?text=3.jpg')"
+                                             alt="Jamie Hood - Managing Director"
+                                             style="width: 100%; height: 100%; left: 0; top: 0;"
+                                             class="portrait-crop absolute max-w-none object-cover">
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <span class="text-xs font-display font-bold text-neon-purple uppercase tracking-widest block mb-1">Managing Director</span>
+                                    <h4 class="text-lg font-display font-bold text-white mb-2">Jamie Hood</h4>
+                                    <p class="text-xs text-gray-400 leading-relaxed">University of Oxford, Master of Mathematics (Distinction), awarded two academic scholarships.</p>
+                                </div>
+                            </div>
+
+                            <!-- Director 2: Technical Director (2.jpg - Cavern, Light Blue Collared Shirt) -->
+                            <div class="glass-card rounded-2xl overflow-hidden group transition-transform duration-300 hover:-translate-y-2">
+                                <div class="aspect-square w-full overflow-hidden bg-dark-800 border-b border-white/5 relative">
+                                    <div class="w-full h-full relative group-hover:scale-105 transition-transform duration-500">
+                                        <img src="2.jpg"
+                                             data-fallbacks="2.JPG,2.jpeg"
+                                             data-crop-x="0.655"
+                                             data-crop-y="0.555"
+                                             data-crop-w="0.36"
+                                             onload="applyPortraitCrop(this)"
+                                             onerror="handlePortraitError(this, 'https://placehold.co/400x400/0a0a0a/3b82f6?text=2.jpg')"
+                                             alt="Jamie Hood - Technical Director"
+                                             style="width: 100%; height: 100%; left: 0; top: 0;"
+                                             class="portrait-crop absolute max-w-none object-cover">
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <span class="text-xs font-display font-bold text-neon-blue uppercase tracking-widest block mb-1">Technical Director</span>
+                                    <h4 class="text-lg font-display font-bold text-white mb-2">Jamie Hood</h4>
+                                    <p class="text-xs text-gray-400 leading-relaxed">Worked extensively on EVM architecture and built low capital risk, automated onchain strategies from scratch.</p>
+                                </div>
+                            </div>
+
+                            <!-- Director 3: Head of Strategy (1.jpg - Harbour, White T-Shirt) -->
+                            <div class="glass-card rounded-2xl overflow-hidden group transition-transform duration-300 hover:-translate-y-2">
+                                <div class="aspect-square w-full overflow-hidden bg-dark-800 border-b border-white/5 relative">
+                                    <div class="w-full h-full relative group-hover:scale-105 transition-transform duration-500">
+                                        <img src="1.jpg"
+                                             data-fallbacks="1.JPG,1.jpeg"
+                                             data-crop-x="0.595"
+                                             data-crop-y="0.44"
+                                             data-crop-w="0.46"
+                                             onload="applyPortraitCrop(this)"
+                                             onerror="handlePortraitError(this, 'https://placehold.co/400x400/0a0a0a/06b6d4?text=1.jpg')"
+                                             alt="Jamie Hood - Head of Strategy"
+                                             style="width: 100%; height: 100%; left: 0; top: 0;"
+                                             class="portrait-crop absolute max-w-none object-cover">
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <span class="text-xs font-display font-bold text-neon-cyan uppercase tracking-widest block mb-1">Head of Strategy</span>
+                                    <h4 class="text-lg font-display font-bold text-white mb-2">Jamie Hood</h4>
+                                    <p class="text-xs text-gray-400 leading-relaxed">Experienced in improving centralised market making models, building decentralised market making strategies from scratch, and developing diverse trading bots.</p>
+                                </div>
+                            </div>
+
+                            <!-- Director 4: Head of Operations (4.jpg - Coastline, Dark Green T-Shirt) -->
+                            <div class="glass-card rounded-2xl overflow-hidden group transition-transform duration-300 hover:-translate-y-2">
+                                <div class="aspect-square w-full overflow-hidden bg-dark-800 border-b border-white/5 relative">
+                                    <div class="w-full h-full relative group-hover:scale-105 transition-transform duration-500">
+                                        <img src="4.jpg"
+                                             data-fallbacks="4.JPG,4.jpeg"
+                                             data-crop-x="0.56"
+                                             data-crop-y="0.35"
+                                             data-crop-w="0.32"
+                                             onload="applyPortraitCrop(this)"
+                                             onerror="handlePortraitError(this, 'https://placehold.co/400x400/0a0a0a/8b5cf6?text=4.jpg')"
+                                             alt="Jamie Hood - Head of Operations"
+                                             style="width: 100%; height: 100%; left: 0; top: 0;"
+                                             class="portrait-crop absolute max-w-none object-cover">
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <span class="text-xs font-display font-bold text-neon-purple uppercase tracking-widest block mb-1">Head of Operations</span>
+                                    <h4 class="text-lg font-display font-bold text-white mb-2">Jamie Hood</h4>
+                                    <p class="text-xs text-gray-400 leading-relaxed">Hedge fund operations background in trade management and reconciliation automation, plus TradFi securities experience as a quant researcher at a bulge bracket bank.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-16 text-center">
+                            <a href="contact.html" data-page="contact" class="inline-block relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-all">
+                                Work With Us
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PAGE 3: CONTACT US (contact.html)          -->
+        <!-- ========================================== -->
+        <div id="page-contact" class="page-section hidden">
+            <section class="relative pt-36 pb-28 min-h-[85vh] flex items-center overflow-hidden">
+                <div class="absolute inset-0 bg-grid z-[-1]"></div>
+                <!-- Glow effects -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-gradient-to-r from-neon-blue/20 to-neon-purple/20 blur-[100px] rounded-full pointer-events-none"></div>
+                
+                <div class="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 z-10 w-full">
+                    <div class="glass-card p-8 md:p-12 rounded-3xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        
+                        <!-- Text Content (No mailto link here as requested) -->
+                        <div class="text-left">
+                            <h2 class="text-neon-cyan text-sm font-bold uppercase tracking-widest mb-3">Initiate Protocol</h2>
+                            <h1 class="text-3xl md:text-5xl font-display font-bold text-white mb-6">Deploy Your Vision</h1>
+                            <p class="text-gray-400 mb-8 leading-relaxed">
+                                Partner with JHood Labs to build resilient, scalable, and economically sound Web3 applications. Outline your requirements and let's engineer the decentralised future together.
+                            </p>
+                            <div class="space-y-4 border-t border-white/10 pt-6 text-sm text-gray-400">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-2 h-2 rounded-full bg-neon-purple"></span>
+                                    <span>Tokenomics &amp; Mechanism Design</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-2 h-2 rounded-full bg-neon-blue"></span>
+                                    <span>Quantitative DeFi &amp; Liquidity Strategy</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-2 h-2 rounded-full bg-neon-cyan"></span>
+                                    <span>Tailored Web3 Engineering</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Form -->
+                        <div class="bg-dark-900/40 p-6 md:p-8 rounded-2xl border border-white/5 shadow-inner">
+                            
+                            <!-- Formspree Global State Messages -->
+                            <div data-fs-success class="text-neon-cyan text-sm font-medium mb-5 bg-neon-cyan/10 border border-neon-cyan/20 p-4 rounded-lg empty:hidden"></div>
+                            <div data-fs-error class="text-red-400 text-sm font-medium mb-5 bg-red-400/10 border border-red-400/20 p-4 rounded-lg empty:hidden"></div>
+                            
+                            <form id="my-form" action="https://formspree.io/f/mbgoajoz" method="POST" class="space-y-5">
+                                <div>
+                                    <label for="name" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Name</label>
+                                    <input type="text" id="name" name="name" required data-fs-field
+                                        class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-purple focus:ring-1 focus:ring-neon-purple transition-all placeholder-gray-600" 
+                                        placeholder="Satoshi Nakamoto">
+                                    <span data-fs-error="name" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                                </div>
+                                
+                                <div>
+                                    <label for="email" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
+                                    <input type="email" id="email" name="email" required data-fs-field
+                                        class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-blue focus:ring-1 focus:ring-neon-blue transition-all placeholder-gray-600" 
+                                        placeholder="visionary@web3.com">
+                                    <span data-fs-error="email" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                                </div>
+                                
+                                <div>
+                                    <label for="message" class="block text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Message</label>
+                                    <textarea id="message" name="message" rows="4" required data-fs-field
+                                        class="w-full bg-dark-900/80 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan transition-all placeholder-gray-600 resize-none" 
+                                        placeholder="Outline your parameters..."></textarea>
+                                    <span data-fs-error="message" class="block text-red-400 text-xs mt-2 empty:hidden"></span>
+                                </div>
+                                
+                                <button type="submit" data-fs-submit-btn class="w-full relative glow-button bg-white text-dark-900 px-8 py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-gray-200 transition-all mt-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    Send Message
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
 
     <!-- Footer -->
     <footer class="bg-dark-900 pt-20 pb-10 border-t border-white/10 relative z-10">
@@ -336,7 +635,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
                 <!-- Brand Col -->
                 <div class="lg:col-span-2">
-                    <a href="#" class="flex items-center gap-3 mb-6">
+                    <a href="index.html" data-page="home" class="flex items-center gap-3 mb-6">
                         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-blue to-neon-purple p-[1px]">
                             <div class="w-full h-full bg-dark-900 rounded-lg flex items-center justify-center">
                                 <span class="text-white font-display font-bold text-sm leading-none">JH</span>
@@ -353,10 +652,9 @@
                 <div>
                     <h4 class="text-white font-display font-bold uppercase tracking-widest text-xs mb-6">Index</h4>
                     <ul class="space-y-4 text-sm text-gray-500">
-                        <li><a href="#" class="hover:text-neon-cyan transition-colors">Home</a></li>
-                        <li><a href="#services" class="hover:text-neon-cyan transition-colors">Services</a></li>
-                        <li><a href="#about" class="hover:text-neon-cyan transition-colors">About Us</a></li>
-                        <li><a href="#contact" class="hover:text-neon-cyan transition-colors">Contact</a></li>
+                        <li><a href="index.html" data-page="home" class="hover:text-neon-cyan transition-colors">Home</a></li>
+                        <li><a href="about.html" data-page="about" class="hover:text-neon-cyan transition-colors">About Us</a></li>
+                        <li><a href="contact.html" data-page="contact" class="hover:text-neon-cyan transition-colors">Contact</a></li>
                     </ul>
                 </div>
 
@@ -376,8 +674,8 @@
                     &copy; <span id="year"></span> JHood Labs. Decentralised Network.
                 </p>
                 <div class="flex space-x-6 text-xs text-gray-600">
-                    <a href="#" class="hover:text-white transition-colors">Privacy</a>
-                    <a href="#" class="hover:text-white transition-colors">Terms</a>
+                    <a href="index.html" data-page="home" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="index.html" data-page="home" class="hover:text-white transition-colors">Terms</a>
                 </div>
             </div>
         </div>
@@ -420,6 +718,108 @@
                 navbar.classList.remove('border-b', 'border-white/10', 'bg-dark-900/80');
                 navbar.classList.add('bg-transparent');
             }
+        });
+
+        // Multi-Page View Router (works both in single-file preview & across separate HTML files)
+        const pages = {
+            home: document.getElementById('page-home'),
+            about: document.getElementById('page-about'),
+            contact: document.getElementById('page-contact')
+        };
+
+        const pageTitles = {
+            home: 'JHood Labs | Web3 & Crypto Consulting',
+            about: 'About Us | JHood Labs',
+            contact: 'Contact | JHood Labs'
+        };
+
+        function switchPage(pageKey, scrollTarget = null, updateHash = true) {
+            if (!pages[pageKey]) pageKey = 'home';
+
+            // Toggle page visibility
+            Object.keys(pages).forEach(key => {
+                if (key === pageKey) {
+                    pages[key].classList.remove('hidden');
+                } else {
+                    pages[key].classList.add('hidden');
+                }
+            });
+
+            // Update document title
+            document.title = pageTitles[pageKey];
+
+            // Update active state on desktop navbar
+            document.querySelectorAll('.nav-link').forEach(link => {
+                const isTargetPage = link.getAttribute('data-page') === pageKey;
+                if (isTargetPage && pageKey !== 'contact') {
+                    link.classList.add('nav-active');
+                } else {
+                    link.classList.remove('nav-active');
+                }
+            });
+
+            // Update URL hash so browser Back/Forward buttons work naturally
+            if (updateHash) {
+                const newHash = pageKey === 'home' ? (scrollTarget ? `#${scrollTarget}` : '#home') : `#${pageKey}`;
+                if (window.location.hash !== newHash) {
+                    try {
+                        window.location.hash = newHash;
+                    } catch (err) {
+                        // Ignore history restrictions in sandboxed preview iframes
+                    }
+                }
+            }
+
+            // Scroll to section or top of new page
+            if (scrollTarget) {
+                const el = document.getElementById(scrollTarget);
+                if (el) {
+                    setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 40);
+                }
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Intercept internal page navigation links
+        document.querySelectorAll('a[data-page]').forEach(anchor => {
+            anchor.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetPage = anchor.getAttribute('data-page');
+                const scrollTarget = anchor.getAttribute('data-scroll') || null;
+                switchPage(targetPage, scrollTarget, true);
+            });
+        });
+
+        // Handle browser Back/Forward navigation and direct URL hashes/filenames
+        function syncFromLocation() {
+            let hash = '';
+            let path = '';
+            try {
+                hash = window.location.hash.replace('#', '').toLowerCase();
+                path = window.location.pathname.toLowerCase();
+            } catch (err) {
+                // Fallback safely if location properties are restricted
+            }
+
+            if (hash === 'about' || path.endsWith('about.html')) {
+                switchPage('about', null, false);
+            } else if (hash === 'contact' || path.endsWith('contact.html')) {
+                switchPage('contact', null, false);
+            } else if (hash === 'competencies') {
+                switchPage('home', 'competencies', false);
+            } else {
+                switchPage('home', null, false);
+            }
+        }
+
+        window.addEventListener('hashchange', syncFromLocation);
+        window.addEventListener('popstate', syncFromLocation);
+        window.addEventListener('DOMContentLoaded', () => {
+            syncFromLocation();
+            document.querySelectorAll('.portrait-crop').forEach(img => {
+                if (img.complete && img.naturalWidth > 0) applyPortraitCrop(img);
+            });
         });
     </script>
 
